@@ -1,6 +1,17 @@
 #include <iostream>
-
+#include <string>
 using namespace std;
+//lista duplamente encadeada circular ordenada alfabeticamente.
+struct Alunos
+{
+    int numero;
+    string nome;
+    float notas[14];
+    float exame;
+    Alunos *prox;
+    Alunos *ant;
+};
+
 struct Aula
 {
     int numeroOrdem;
@@ -24,16 +35,8 @@ struct Disciplina
     int frequenciaMin = 70;
     Disciplina *prox;
     Aula *inicioAula = NULL, *fimAula = NULL;
+    Alunos *inicioAluno = NULL, *fimAluno = NULL;
 };
-
-struct Alunos
-{
-    int numero;
-    string nome;
-    float notas[14];
-    float exame;
-};
-
 
 //verifica se o semestre é valido.
 bool semestreAceitavel(int ano, int semestre, Disciplina **inicio)
@@ -84,9 +87,36 @@ void mostraDisciplinas(Disciplina **inicio)
     {
         cout << "\n"
              << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: "
-             << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\n/----------------/";
+             << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\nNumero de alunos: " << aux->quantAlunos << "\n/----------------/";
         aux = aux->prox;
     }
+}
+
+//aux será a disciplina encontrada. Se não encontrar retorna false.
+bool encontraDisciplina(Disciplina **inicio, Disciplina **aux)
+{
+    //printa as disciplinas
+    mostraDisciplinas(inicio);
+    int cod;
+    cout << "\nDigite o codigo da Disciplina que deseja cadastrar alunos: ";
+    cin >> cod;
+
+    *aux = *inicio;
+    //procurando a disciplina
+    while (*aux != NULL && (*aux)->codigo != cod)
+    {
+        *aux = (*aux)->prox;
+    }
+
+    //chegou ao fim da lista e não encontrou, retorna false
+    if (*aux == NULL)
+    {
+        cout << "Desculpe disciplina nao encontrada\n";
+        return false;
+    }
+    //se encontrou retorna true
+    else
+        return true;
 }
 
 //da aula de uma determinada disciplina, pegando todas as informações necessárias.
@@ -94,27 +124,13 @@ void darAula(Disciplina **inicio)
 {
     Disciplina *aux;
     int cod;
-
-    mostraDisciplinas(inicio);
-    cout << "\nDigite o codigo da Disciplina da aula: ";
-    cin >> cod;
-
-    aux = *inicio;
-    while (aux != NULL && aux->codigo != cod)
-    {
-        aux = aux->prox;
-    }
-
-    if (aux == NULL)
-    {
-        cout << "Desculpe disciplina nao encontrada";
-        return;
-    }
-    else
+    //se encontrou a disciplina
+    if (encontraDisciplina(inicio, &aux))
     {
         Aula *novo = new Aula();
         //contabilizando horas
         aux->CHRealizada += novo->qtdHoras;
+
         cout << "Digite o numero de Ordem da aula: ";
         cin >> novo->numeroOrdem;
 
@@ -166,23 +182,8 @@ void mostraAulas(Disciplina **inicio)
     Disciplina *aux;
 
     int cod;
-
-    mostraDisciplinas(inicio);
-    cout << "\nDigite o codigo da Disciplina que deseja ver as aulas: ";
-    cin >> cod;
-
-    aux = *inicio;
-    while (aux != NULL && aux->codigo != cod)
-    {
-        aux = aux->prox;
-    }
-
-    if (aux == NULL)
-    {
-        cout << "Desculpe disciplina nao encontrada\n";
-        return;
-    }
-    else
+    //se encontrou a disciplina
+    if (encontraDisciplina(inicio, &aux))
     {
         Aula *auxAula = aux->inicioAula;
         while (auxAula != NULL)
@@ -216,7 +217,7 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo)
     if (!semestreAceitavel(ano, semestre, inicio))
     {
         cout << "\nDesculpe mas um professor só pode ministrar 5 aulas por semestre";
-        delete(*novo);
+        delete (*novo);
         return false;
     }
     else
@@ -242,27 +243,12 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo)
 //edita uma disciplina ja existente.
 void editaDisciplina(Disciplina **inicio)
 {
-    mostraDisciplinas(inicio);
     Disciplina *aux;
-    aux = *inicio;
-    int codigo, achou = 0;
-    cout << "\nDigite o Codigo da Disciplina: ";
-    cin >> codigo;
-    while (aux != NULL)
-    {
-        if (aux->codigo == codigo)
-        {
-            achou = 1;
-            break;
-        }
-        aux = aux->prox;
-    }
-    if (achou)
+    //se encontrou a disciplina
+    if (encontraDisciplina(inicio, &aux))
     {
         dadosDisciplina(inicio, &aux);
     }
-    else
-        cout << "\nDisciplina nao encontrada.";
 }
 
 //cadastra uma disciplina.
@@ -312,6 +298,120 @@ void cadastraDisciplina(Disciplina **inicio, Disciplina **fim)
     }
 }
 
+void cadastraAluno(Disciplina **inicio)
+{
+    int cod;
+    int numAlunos;
+    Disciplina *aux;
+    Alunos *auxAlunos;
+
+    if (encontraDisciplina(inicio, &aux))
+    {
+        //maximo de 50
+        if (aux->quantAlunos == 50)
+        {
+            cout << "Desculpe, disciplina lotada.";
+            return;
+        }
+        else
+        {
+            //maximo de 50
+            while (true)
+            {
+                cout << "\nDigite o numero de alunos que deseja cadastrar: ";
+                cin >> numAlunos;
+                if (numAlunos + aux->quantAlunos <= 50)
+                    break;
+                else
+                    cout << "\nEsta quantidade ira sobrecarregar a disciplina.";
+            }
+            for (int i = 0; i < numAlunos; i++)
+            {
+                aux->quantAlunos++;
+                Alunos *novo = new Alunos();
+                Alunos *auxAlunos;
+                //pega o nome primeiro para ordenar a lista
+                cout << "\nDigite o nome do aluno: ";
+                cin >> novo->nome;
+                //se vazia
+                if (aux->inicioAluno == NULL)
+                {
+                    novo->prox = novo;
+                    novo->ant = novo;
+                    aux->inicioAluno = novo;
+                    aux->fimAluno = novo;
+                }
+                else
+                {
+                    //se for menor que inicioAluno
+                    if (novo->nome.compare(aux->inicioAluno->nome) < 0)
+                    {
+                        printf("MENOR QUE HEAD\n");
+                        aux->fimAluno->prox = novo;
+                        novo->ant = aux->fimAluno;
+                        novo->prox = aux->inicioAluno;
+                        aux->inicioAluno->ant = novo;
+                        aux->inicioAluno = novo;
+                    }
+                    //se for maior ou igual a fimAluno
+                    else if (novo->nome.compare(aux->fimAluno->nome) >= 0)
+                    {
+                        printf("MAIOR QUE TAIL");
+                        aux->fimAluno->prox = novo;
+                        novo->prox = aux->inicioAluno;
+                        aux->inicioAluno->ant = novo;
+                        novo->ant = aux->fimAluno;
+                        aux->fimAluno = novo;
+                    }
+                    //se não for nenhum daqueles
+                    else
+                    {
+                        auxAlunos = aux->inicioAluno;
+                        //novo tem q ficar antes de aux
+                        while (auxAlunos != aux->fimAluno)
+                        {
+                            if (novo->nome.compare(auxAlunos->nome) < 0)
+                                break;
+                            auxAlunos = auxAlunos->prox;
+                        }
+                        novo->prox = auxAlunos;
+                        novo->ant = auxAlunos->ant;
+                        auxAlunos->ant->prox = novo;
+                        auxAlunos->ant = novo;
+                    }
+                }
+                int achou;
+                //após colocar na devida posição, pede o numero e faz verificações.
+                do
+                {
+                    auxAlunos = aux->inicioAluno;
+                    achou = 0;
+                    cout << "\nDigite o numero do aluno: ";
+                    cin >> novo->numero;
+                    do
+                    {
+                        if (novo->numero == auxAlunos->numero && auxAlunos != novo)
+                        {
+                            cout << "\nNumero ja existente.";
+                            achou = 1;
+                            break;
+                        }
+                        auxAlunos = auxAlunos->prox;
+                    } while (auxAlunos != aux->inicioAluno);
+                } while (achou);
+            }
+            Alunos *auxAlunos;
+            auxAlunos = aux->inicioAluno;
+            //printa a lista para teste. tirar antes de enviar o trabalho.
+            do
+            {
+                cout << auxAlunos->nome << "\n";
+                auxAlunos = auxAlunos->prox;
+            } while (auxAlunos != aux->inicioAluno);
+        }
+    }
+}
+
 int main()
 {
     Disciplina *inicio = NULL, *fim = NULL;
@@ -330,10 +430,10 @@ int main()
         cout << "\n1- Cadastra nova Disciplina";
         cout << "\n2- Editar Disciplina";
         cout << "\n3- Mostrar Disciplinas";
-        cout << "\n4- Remover Disciplina (nao feito)";
-        cout << "\n5- Ministrar aula de uma disciplina";
-        cout << "\n6- Mostrar aulas de uma Disciplina";
-        cout << "\n7- Cadastrar aluno em uma Disciplina";
+        cout << "\n4- Remover Disciplina (nao feito)";   //acho q n tem q fazer esse n, mas dps ve
+        cout << "\n5- Ministrar aula de uma disciplina"; //falta marcar falta e presença pros alunos aqui, não ministrar se não tiver alunos.
+        cout << "\n6- Mostrar aulas de uma Disciplina";  //ajeitar data
+        cout << "\n7- Cadastrar alunos em uma Disciplina";
         cout << "\nSua escolha: ";
 
         cin >> op;
@@ -355,6 +455,9 @@ int main()
             break;
         case 6:
             mostraAulas(&inicio);
+            break;
+        case 7:
+            cadastraAluno(&inicio);
             break;
         default:
             break;
