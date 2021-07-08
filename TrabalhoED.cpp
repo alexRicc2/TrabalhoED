@@ -19,7 +19,7 @@ struct Disciplina
     int quantProvas;
     int quantTrabalhos;
     int CHPrevista = 60;
-    int CHRealizada;
+    int CHRealizada= 0;
     float notaMin = 5.0;
     int frequenciaMin = 70;
     Disciplina *prox;
@@ -75,8 +75,8 @@ void mostraDisciplinas(Disciplina **inicio)
 
     while (aux != NULL)
     {
-        cout << "\n"
-             << aux->nome << " codigo: " << aux->codigo;
+        cout << "\n"  << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: " 
+        << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\n/----------------/";
         aux = aux->prox;
     }
 }
@@ -102,8 +102,9 @@ void darAula(Disciplina **inicio)
     }
     else
     {
-
         Aula *novo = new Aula();
+        //contabilizando horas
+        aux->CHRealizada+=novo->qtdHoras;
         cout << "Digite o numero de Ordem da aula: ";
         cin >> novo->numeroOrdem;
 
