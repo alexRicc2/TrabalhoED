@@ -19,7 +19,7 @@ struct Disciplina
     int quantProvas;
     int quantTrabalhos;
     int CHPrevista = 60;
-    int CHRealizada= 0;
+    int CHRealizada = 0;
     float notaMin = 5.0;
     int frequenciaMin = 70;
     Disciplina *prox;
@@ -34,6 +34,8 @@ struct Alunos
     float exame;
 };
 
+
+//verifica se o semestre é valido.
 bool semestreAceitavel(int ano, int semestre, Disciplina **inicio)
 {
     Disciplina *aux;
@@ -51,13 +53,16 @@ bool semestreAceitavel(int ano, int semestre, Disciplina **inicio)
     else
         return true;
 }
-bool codAceitavel(int codigo, Disciplina **inicio)
+
+//verifica se o código é válido.
+bool codAceitavel(int codigo, Disciplina **atual, Disciplina **inicio)
 {
     Disciplina *aux;
     aux = *inicio;
     while (aux != NULL)
-    {
-        if (aux->codigo == codigo)
+    { //no caso de se editar uma disciplina, é necessária a verificação adicional de aux ser diferente
+        //da que está sendo editada.
+        if (aux->codigo == codigo && aux != *atual)
         {
             cout << "\nSinto muito este codigo ja existe para uma outra disciplina\n";
             return false;
@@ -66,6 +71,8 @@ bool codAceitavel(int codigo, Disciplina **inicio)
     }
     return true;
 }
+
+//printa disciplinas.
 void mostraDisciplinas(Disciplina **inicio)
 {
     Disciplina *aux;
@@ -75,11 +82,14 @@ void mostraDisciplinas(Disciplina **inicio)
 
     while (aux != NULL)
     {
-        cout << "\n"  << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: " 
-        << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\n/----------------/";
+        cout << "\n"
+             << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: "
+             << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\n/----------------/";
         aux = aux->prox;
     }
 }
+
+//da aula de uma determinada disciplina, pegando todas as informações necessárias.
 void darAula(Disciplina **inicio)
 {
     Disciplina *aux;
@@ -104,7 +114,7 @@ void darAula(Disciplina **inicio)
     {
         Aula *novo = new Aula();
         //contabilizando horas
-        aux->CHRealizada+=novo->qtdHoras;
+        aux->CHRealizada += novo->qtdHoras;
         cout << "Digite o numero de Ordem da aula: ";
         cin >> novo->numeroOrdem;
 
@@ -149,6 +159,8 @@ void darAula(Disciplina **inicio)
         }
     }
 }
+
+//printa as aulas de uma determinada disciplina.
 void mostraAulas(Disciplina **inicio)
 {
     Disciplina *aux;
@@ -182,72 +194,120 @@ void mostraAulas(Disciplina **inicio)
         }
     }
 }
-void cadastraDisciplina(Disciplina **inicio, Disciplina **fim)
+
+//pega os dados da disciplina e faz verificações.
+//retorna true ou false para verificações futuras.
+//é usado para criar disciplina e editar disciplina.
+bool dadosDisciplina(Disciplina **inicio, Disciplina **novo)
 {
-
-    Disciplina *novo = new Disciplina();
-
-    cout << "\nNome da Disciplina: ";
-    cin.ignore();
-    getline(cin, novo->nome);
-
-    do
-    {
-        cout << "Codigo da Disciplina (somente numeros): ";
-        cin >> novo->codigo;
-    } while (!codAceitavel(novo->codigo, inicio));
-
+    int semestre, ano;
     do
     {
         cout << "Ano: ";
-        cin >> novo->ano;
-    } while (novo->ano < 2013 || novo->ano > 2030);
+        cin >> ano;
+    } while (ano < 2013 || ano > 2030);
 
     do
     {
         cout << "Semestre: ";
-        cin >> novo->semestre;
-    } while (novo->semestre != 1 && novo->semestre != 2);
+        cin >> semestre;
+    } while (semestre != 1 && semestre != 2);
 
-    if (!semestreAceitavel(novo->ano, novo->semestre, inicio))
+    if (!semestreAceitavel(ano, semestre, inicio))
     {
         cout << "\nDesculpe mas um professor só pode ministrar 5 aulas por semestre";
-        return;
-    }
-
-    if (*inicio == NULL)
-    {
-        novo->prox = NULL;
-        *inicio = novo;
-        *fim = novo;
+        delete(*novo);
+        return false;
     }
     else
     {
-        Disciplina *aux;
-        Disciplina *anterior = NULL;
-        aux = *inicio;
+        //é necessario atribuit a aux somente após verificação no caso de edição de uma disciplina.
+        (*novo)->semestre = semestre;
+        (*novo)->ano = ano;
+    }
 
-        while (aux != NULL && novo->codigo > aux->codigo)
+    cout << "\nNome da Disciplina: ";
+
+    cin.ignore();
+    getline(cin, (*novo)->nome);
+
+    do
+    {
+        cout << "Codigo da Disciplina (somente numeros): ";
+        cin >> (*novo)->codigo;
+    } while (!codAceitavel((*novo)->codigo, novo, inicio)); //passando novo em si para não incluir ele na verificação no caso de edição.
+    return true;
+}
+
+//edita uma disciplina ja existente.
+void editaDisciplina(Disciplina **inicio)
+{
+    mostraDisciplinas(inicio);
+    Disciplina *aux;
+    aux = *inicio;
+    int codigo, achou = 0;
+    cout << "\nDigite o Codigo da Disciplina: ";
+    cin >> codigo;
+    while (aux != NULL)
+    {
+        if (aux->codigo == codigo)
         {
-            anterior = aux;
-            aux = aux->prox;
+            achou = 1;
+            break;
         }
+        aux = aux->prox;
+    }
+    if (achou)
+    {
+        dadosDisciplina(inicio, &aux);
+    }
+    else
+        cout << "\nDisciplina nao encontrada.";
+}
 
-        if (anterior == NULL)
+//cadastra uma disciplina.
+void cadastraDisciplina(Disciplina **inicio, Disciplina **fim)
+{
+
+    Disciplina *novo = new Disciplina();
+    //se retornar false, então ja chegou ao maximo de disciplinas por semestre, e não vai incluir na lista.
+    if (dadosDisciplina(inicio, &novo))
+    {
+
+        if (*inicio == NULL)
         {
-            novo->prox = *inicio;
+            novo->prox = NULL;
             *inicio = novo;
-        }
-        else if (aux == NULL)
-        {
-            (*fim)->prox = novo;
             *fim = novo;
-            (*fim)->prox = NULL;
         }
         else
         {
-            anterior->prox = novo;
-            novo->prox = aux;
+            Disciplina *aux;
+            Disciplina *anterior = NULL;
+            aux = *inicio;
+
+            while (aux != NULL && novo->codigo > aux->codigo)
+            {
+                anterior = aux;
+                aux = aux->prox;
+            }
+
+            if (anterior == NULL)
+            {
+                novo->prox = *inicio;
+                *inicio = novo;
+            }
+            else if (aux == NULL)
+            {
+                (*fim)->prox = novo;
+                *fim = novo;
+                (*fim)->prox = NULL;
+            }
+            else
+            {
+                anterior->prox = novo;
+                novo->prox = aux;
+            }
         }
     }
 }
@@ -268,7 +328,7 @@ int main()
     {
         cout << "\nSistema de Notas e Frequencias";
         cout << "\n1- Cadastra nova Disciplina";
-        cout << "\n2- Editar Disciplina (nao feito)";
+        cout << "\n2- Editar Disciplina";
         cout << "\n3- Mostrar Disciplinas";
         cout << "\n4- Remover Disciplina (nao feito)";
         cout << "\n5- Ministrar aula de uma disciplina";
@@ -283,6 +343,9 @@ int main()
         case 1:
             cadastraDisciplina(&inicio, &fim);
             qtdDisciplinas++;
+            break;
+        case 2:
+            editaDisciplina(&inicio);
             break;
         case 3:
             mostraDisciplinas(&inicio);
