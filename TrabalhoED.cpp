@@ -27,6 +27,7 @@ struct Alunos
   Nota notas[14];
   bool exame = false;
   bool aprovado = false;
+  float media;
   float notaExame;
   Alunos *prox;
   Alunos *ant;
@@ -60,21 +61,20 @@ struct Disciplina
   string nome;
   int ano, semestre;
   int quantAlunos;
-  int quantProvas;
   int provasDadas = 0;
-  int quantTrabalhos;
   int trabalhosDados = 0;
   int CHPrevista = 60;
   int CHRealizada = 0;
   float notaMin = 5.0;
   int frequenciaMin = 70;
+  bool semestreFechado = false;
   Disciplina *prox;
   Aula *inicioAula = NULL, *fimAula = NULL;
   ProvaTrab *inicioProva = NULL, *fimProva = NULL;
   Alunos *inicioAluno = NULL, *fimAluno = NULL;
 };
 
-//verifica se o semestre é valido.
+//verifica se o semestre é valido (maximo de 5 por semestre).
 bool semestreAceitavel(int ano, int semestre, Disciplina **inicio)
 {
   Disciplina *aux;
@@ -115,20 +115,79 @@ bool codAceitavel(int codigo, Disciplina **atual, Disciplina **inicio)
 void mostraDisciplinas(Disciplina **inicio)
 {
   Disciplina *aux;
+  int quantProvasCumpridas;
+  float maiorNota, menorNota, TotalNota;
 
   aux = *inicio;
-  cout << "\nMostrando todas as Disciplinas";
+  cout << "\n---Mostrando todas as Disciplinas---\n";
 
   while (aux != NULL)
   {
+    int qtdAvaliacoes = aux->provasDadas + aux->trabalhosDados;
+    int faltas=0,presente=0;
+
     cout << "\n"
          << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: "
-         << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\nNumero de alunos: " << aux->quantAlunos << "\nProvas dadas: " << aux->provasDadas << "\nTrabalhos dados: " << aux->trabalhosDados << "\n/----------------/";
+         << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\nNumero de alunos: " << aux->quantAlunos << "\nProvas dadas: " << aux->provasDadas << "\nTrabalhos dados: " << aux->trabalhosDados;
+
+         //se a disciplina possuir alunos
+         if(aux->inicioAluno != NULL){
+            Alunos *auxAluno = aux->inicioAluno;
+
+            maiorNota=0, menorNota=10, TotalNota=0, quantProvasCumpridas=0;
+
+            do{ //percorre todos alunos
+
+              //se possuir avaliacoes
+              if(qtdAvaliacoes > 0){
+                //calcula a maior,menor e media da nota
+                for(int i=0; i< 14 && auxAluno->notas[i].nota != -1; i++){
+              
+                if(auxAluno->notas[i].nota > maiorNota)maiorNota = auxAluno->notas[i].nota;
+                if(auxAluno->notas[i].nota < menorNota)menorNota = auxAluno->notas[i].nota;
+                TotalNota += auxAluno->notas[i].nota;
+                quantProvasCumpridas++;
+                
+                }
+              }
+              //se possuir aulas
+              if(aux->inicioAula != NULL){
+                Presenca *auxPres;
+                auxPres = auxAluno->inicioPres;
+
+                //contabiliza as presencas de um aluno
+                while(auxPres != NULL){
+                  if(auxPres->p == 'f')faltas++;
+                  else presente++;
+
+                  auxPres = auxPres->prox;
+                }
+              }
+
+              auxAluno = auxAluno->prox;
+            }while(auxAluno != aux->inicioAluno);
+            
+            //printando infromacoes de notas caso foram dadas
+            if(qtdAvaliacoes > 0){
+              cout << "\nMaior nota tirada em uma avaliacao: " << maiorNota;
+              cout << "\nMenor nota tirada em uma avaliacao: " << menorNota;
+              cout << "\nMedia de notas nas avaliacoes: " << TotalNota / quantProvasCumpridas;
+            }
+            if(aux->inicioAula != NULL){
+              float percentual = faltas/float((faltas+presente)) * 100;
+
+              cout << "\nQuantidade faltas: " << faltas;
+              cout << "\nPercentual de faltas: " << percentual << "%";
+            }
+         }
+         
+         (aux->semestreFechado) ? cout << "\nSemestre fechado!!" : cout << "\nSemestre aberto!!";     
+         cout <<"\n/----------------/";
     aux = aux->prox;
   }
 }
-
-void printaData(int num){ //funcao que recebe a data distorcida ao contrario e printa corretamente
+//funcao que recebe a data distorcida ao contrario e printa corretamente
+void printaData(int num){ 
 	
 		int aux;
 		
@@ -220,8 +279,11 @@ void darAula(Disciplina **inicio, int padrao)
   int op;
   //se encontrou a disciplina
   if (encontraDisciplina(inicio, &aux))
-  { //se não tem alunos não tem como dar a aula.
-    if (aux->quantAlunos == 0)
+  { 
+    if(aux->semestreFechado)
+      cout << "Semestre fechado nao eh possivel dar aulas";
+    //se não tem alunos não tem como dar a aula.
+    else if (aux->quantAlunos == 0)
       cout << "Disciplina sem alunos.";
     else
     {
@@ -241,6 +303,7 @@ void darAula(Disciplina **inicio, int padrao)
         cout << "Digite o numero de Ordem da aula: ";
         cin >> novo->numeroOrdem;
 
+        //verificacao de data ser apos inicio do semestre
         while(true){
         cout << "\nData da Aula DD MM YYYY: ";
         cin >> dia >> mes >> ano;
@@ -251,13 +314,13 @@ void darAula(Disciplina **inicio, int padrao)
         cout << "A data deve ser depois do inicio do semestre";
         printaData(dataSemestre);
         }
-
         novo->data = dataAula;
 
         cout << "Conteudo da aula: ";
         cin.ignore();
         getline(cin, novo->conteudo);
-
+        
+        //cadastro completo
         if(padrao == 1){
           cout << "Carga horaria da aula: ";
           cin >> novo->qtdHoras;
@@ -324,6 +387,7 @@ void darAula(Disciplina **inicio, int padrao)
             novo->tipo = 'T';
             aux->trabalhosDados++;
           }
+          //verificacao da data apos inicio do semestre 
           while(true){
             cout << "\nData da Ativadade DD MM YYYY: ";
             cin >> dia >> mes >> ano;
@@ -405,13 +469,13 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
 
   do
   {
-    cout << "Ano: ";
+    cout << "Ano [2013 - 2030]: ";
     cin >> ano;
   } while (ano < 2013 || ano > 2030);
 
   do
   {
-    cout << "Semestre: ";
+    cout << "Semestre [1 ou 2]: ";
     cin >> semestre;
   } while (semestre != 1 && semestre != 2);
 
@@ -428,7 +492,7 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
     (*novo)->ano = ano;
   }
 
-  cout << "\nNome da Disciplina: ";
+  cout << "Nome da Disciplina: ";
 
   cin.ignore();
   getline(cin, (*novo)->nome);
@@ -439,19 +503,20 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
     cin >> (*novo)->codigo;
   } while (!codAceitavel((*novo)->codigo, novo, inicio)); //passando novo em si para não incluir ele na verificação no caso de edição.
 
-  if(padrao == 1){ //cadastro completo;
+  //cadastro completo
+  if(padrao == 1){ 
     cout << "Carga Horaria prevista: ";
     cin >> (*novo)->CHPrevista;
 
     do{
-      cout << "Nota minima para aprovacao: ";
+      cout << "Nota minima para aprovacao [0 a 10]: ";
       cin >> (*novo)->notaMin;
-    }while((*novo)->notaMin >= 0 && (*novo)->notaMin <= 10);
+    }while((*novo)->notaMin < 0 || (*novo)->notaMin > 10);
 
     do{
-      cout << "Presenca minima para aprovacao: ";
+      cout << "Presenca minima para aprovacao [0 a 100]: ";
       cin >> (*novo)->frequenciaMin;
-    }while((*novo)->frequenciaMin >= 0 && (*novo)->frequenciaMin <= 100);
+    }while((*novo)->frequenciaMin < 0 || (*novo)->frequenciaMin > 100);
   }
   return true;
 }
@@ -521,10 +586,14 @@ void cadastraAluno(Disciplina **inicio)
   Disciplina *aux;
   Alunos *auxAlunos;
 
+  //se encontrar a disciplina
   if (encontraDisciplina(inicio, &aux))
   {
     //maximo de 50
-    if (aux->quantAlunos == 50)
+    if(aux->semestreFechado)
+      cout << "Semestre fechado, nao eh possivel cadastrar alunos";
+    
+    else if (aux->quantAlunos == 50)
     {
       cout << "Desculpe, disciplina lotada.";
       return;
@@ -617,84 +686,153 @@ void cadastraAluno(Disciplina **inicio)
     }
   }
 }
+float calculaPresenca(Presenca **pres, int cargaTotal){
+  float presencaFinal = 0;
+  
+  //percorre todas as presencas de um aluno
+  while(*pres != NULL){
+            
+    if((*pres)->p == 'P' || (*pres)->p == 'p'){
+      presencaFinal += (*pres)->aulaCarga;
+    }
+    *pres= (*pres)->prox;
+  }
+  presencaFinal = presencaFinal / cargaTotal;
+  
+  //eh retornado a presenca em porcentagem
+  return presencaFinal*100;
+}
 
 void fechaSemestre(Disciplina **inicio){
   Disciplina *aux;
+
+  //se encontrar a discplina
   if (encontraDisciplina(inicio, &aux)){
     
-    Alunos *auxAluno = aux->inicioAluno;
-    ProvaTrab *auxProvaTrab = aux->inicioProva;
-    Aula *auxAula = aux->inicioAula;
-    float notaMaxima = 0.0;
+    Alunos *auxAluno; 
+    auxAluno = aux->inicioAluno;
+    ProvaTrab *auxProvaTrab;
+    auxProvaTrab = aux->inicioProva;
+    Aula *auxAula;
+    auxAula = aux->inicioAula;
     
-    cout << "\nFechando semestre de " << aux->nome;
+    cout << "\n---Fechando semestre de " << aux->nome <<"---\n";
 
-    if(auxAluno !=NULL){
+    //a disciplina sendo fechada possui alunos
+    if(auxAluno != NULL){
       
       bool temAvaliacao, temAula;
 
-      if(auxProvaTrab != NULL){ //significa que avaliações foram dadas
-        temAvaliacao=true; 
-        /*do{
-          notaMaxima += auxProvaTrab->peso;
-          auxProvaTrab->prox;
-
-        }while(auxProvaTrab != NULL);
-        notaMaxima = notaMaxima * 10;*/
-      }
+      if(auxProvaTrab != NULL)temAvaliacao=true; 
       if(aux->CHRealizada != 0)temAula = true;
 
+      //a disciplina possui aulas e avaliacoes para gerar notas e presenca
       if(temAvaliacao && temAula){
+
+        aux->semestreFechado = true;
         
-        do{
+        do{ //percorre todos os alunos e calcula suas notas e presencas
+
           Presenca *auxPres;
           auxPres = auxAluno->inicioPres;
           float notaFinal = 0.0;
           float presencaFinal = 0.0;
+          
+          //retorna a presenca de um aluno em porcentagem
+          presencaFinal = calculaPresenca(&auxPres, aux->CHRealizada);
 
-          while(auxPres != NULL){
-            
-            if(auxPres->p == 'P' || auxPres->p == 'p'){
-              presencaFinal += auxPres->aulaCarga;
-            }
-            auxPres = auxPres->prox;
-          }
-          presencaFinal = presencaFinal / aux->CHRealizada;
-
-          for(int i=0;i<14;i++){
-            if(auxAluno->notas[i].nota != -1)
+          //loop para calculo de media
+          for(int i=0;i<14 && auxAluno->notas[i].nota != -1 ;i++){
               notaFinal += auxAluno->notas[i].nota * auxAluno->notas[i].peso;
           }
-          presencaFinal = presencaFinal * 100;
+          auxAluno->media = notaFinal;
+
           if(presencaFinal > aux->frequenciaMin && notaFinal > aux->notaMin)auxAluno->aprovado = true;
           else if(presencaFinal > aux->frequenciaMin && notaFinal < aux->notaMin)auxAluno->exame = true;
 
           cout << "\nAluno: " << auxAluno->nome;
-          cout << "\nNota final: " << notaFinal;
+          cout << "\nNota final: " << auxAluno->media;
           cout << "\nPercentual de presenca: " << presencaFinal;
-          if(auxAluno->aprovado) cout << "\nAprovado: true";
-          else{
-            cout << "\nAprovado: false";
-            (auxAluno->exame) ? cout <<"\nEsta de exame: true\n" : cout << "\nEsta de exame: false\n";
-          }
+          if(auxAluno->aprovado) cout << "\nAprovado: true\n";
           
+          //se nao estiver aprovado
+          else{ 
+            cout << "\nAprovado: false";
 
+            //se estiver de exame
+            if(auxAluno->exame){
+              cout <<"\nEsta de exame: true";
+              cout << "\nNota necessaria no exame para " << auxAluno->nome <<  " passar: " << aux->notaMin*2 - auxAluno->media;            
+              cout << "\n--Aplicando exame para " << auxAluno->nome << "--";
+              cout << "\nNota no exame: ";
+              cin >> auxAluno->notaExame;
+
+              auxAluno->media = (auxAluno->media + auxAluno->notaExame) / 2;
+
+              if(auxAluno->media > aux->notaMin){
+                cout << "Aluno Aprovado\n";
+                auxAluno->aprovado = true;
+              }
+              else cout << "Aluno Reprovado\n";  
+            }
+            //nao esta qualificado para exame
+            else cout << "\nEsta de exame: false\n";
+          }
 
           auxAluno = auxAluno->prox;
         }while(auxAluno != aux->inicioAluno);
         
+        
       }
+      //caso tente fechar o semestre possuindo alunos, porem sem avaliacoes ou aulas
       else if(!temAvaliacao && !temAula)cout << "\nNao eh possivel dar notas sem avaliacoes e presenca sem aulas";
-      else if(!temAvaliacao)cout << "\nNao ha avaliacoes";
-      else cout << "\nNao ha aulas";
+      else if(!temAvaliacao)cout << "\nNao "<< aux->nome<< " possui avaliacoes";
+      else cout << "\nNao "<<  aux->nome <<" possui aulas";
       
     }
+    //fechando semestre sem alunos
     else{
       cout << "\nSemestre fechado sem alunos";
+      aux->semestreFechado = true;
     }
     
+  }
+}
 
+void printaAprovadosReprovados(Disciplina **inicio){
+  Disciplina *aux;
+  //se encontrar a disciplina.
+  if (encontraDisciplina(inicio, &aux)){
+    //se a disciplina ja tiver fechado o semestre.
+    if(aux->semestreFechado){
 
+      cout << "\n--Mostrando situacoes dos alunos de " << aux->nome << "--";
+
+      Alunos *auxAlunos = aux->inicioAluno;
+      if(auxAlunos != NULL){
+        do{
+          cout << "\n\nNome: " << auxAlunos->nome << "\nMedia: "<< auxAlunos->media;
+          if(auxAlunos->aprovado) cout << "\nAprovado";
+          
+          else{ // se o aluno for reprovado.
+          
+            float presenca = calculaPresenca(&auxAlunos->inicioPres, aux->CHRealizada);
+            if(presenca < aux->frequenciaMin){
+
+              if(auxAlunos->media < aux->notaMin)cout << "\nReprovado por frequencia e nota";
+              else cout << "\nReprovado por frequencia"; 
+            }
+            else cout << "\nReprovado por nota";
+          }
+
+          auxAlunos = auxAlunos->prox;
+        }while(auxAlunos != aux->inicioAluno); //percorre por todos os alunos na lista circular.
+          
+      }
+    }
+    else{ //se o semestre ainda estiver aberto
+      cout << "\nSemestre de " << aux->nome << " nao foi fechado, nao ha aprovados e reprovados";
+    }
   }
 }
 //printa as informações dos alunos de uma disciplina.
@@ -753,26 +891,28 @@ int main()
   Disciplina *inicio = NULL, *fim = NULL;
 
   string nome;
-  int qtdDisciplinas, op, padrao;
+  int op, padrao;
   cout << "Sistema de Notas e Frequencias";
   cout << "\nNome do professor: ";
   cin.ignore();
   getline(cin, nome);
-  cout << "\n1- Fazer cadastramento completo da disciplina";
+  cout << "\n1- Fazer cadastramentos completos";
   cout << "\n2- Utilizar algumas propriedades padrao";
+  cout << "\nEscolha: ";
   cin >> padrao;
 
   do
   {
-    cout << "\nSistema de Notas e Frequencias";
+    cout << "\n\nSistema de Notas e Frequencias";
     cout << "\n1- Cadastra nova Disciplina";
     cout << "\n2- Editar Disciplina";
     cout << "\n3- Mostrar Disciplinas";
     cout << "\n4- Mostrar alunos de determinada disciplina";
-    cout << "\n5- Ministrar aula de uma disciplina / Avaliacao";
+    cout << "\n5- Ministrar aula de uma disciplina / dar Avaliacao";
     cout << "\n6- Mostrar aulas de uma Disciplina"; 
     cout << "\n7- Cadastrar alunos em uma Disciplina";
-    cout << "\n8- Fechar semestre de uma Disciplina"; 
+    cout << "\n8- Fechamento de semestre com Aplicacao de exames/recuperacao";
+    cout << "\n9- Relatorio dos Aprovados e Reprovados"; 
     cout << "\nSua escolha: ";
 
     cin >> op;
@@ -781,7 +921,6 @@ int main()
     {
     case 1:
       cadastraDisciplina(&inicio, &fim, padrao);
-      qtdDisciplinas++;
       break;
     case 2:
       editaDisciplina(&inicio);
@@ -803,6 +942,10 @@ int main()
       break;
     case 8:
       fechaSemestre(&inicio);
+      break;
+    case 9:
+      printaAprovadosReprovados(&inicio);
+      break;
     default:
       break;
     }
