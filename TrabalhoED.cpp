@@ -6,6 +6,7 @@ using namespace std;
 struct Presenca
 {
   char p;
+  int aulaCarga; //esse atributo foi adicionado para evitar uma busca de dois whiles aninhados para achar a carga
   Presenca *prox;
   Presenca *ant;
 };
@@ -24,7 +25,9 @@ struct Alunos
   int numero;
   string nome;
   Nota notas[14];
-  float exame;
+  bool exame = false;
+  bool aprovado = false;
+  float notaExame;
   Alunos *prox;
   Alunos *ant;
   Presenca *inicioPres = NULL, *fimPres = NULL;
@@ -125,6 +128,24 @@ void mostraDisciplinas(Disciplina **inicio)
   }
 }
 
+void printaData(int num){ //funcao que recebe a data distorcida ao contrario e printa corretamente
+	
+		int aux;
+		
+		aux = num%100;
+		if(aux >=10)cout << "\ndata: "<< aux << "/";
+    else cout << "\ndata: 0" << aux << "/";
+		
+		aux = num%10000;
+		aux = aux/100;
+
+    if(aux >=10) cout << aux << "/";
+		else cout << "0" << aux << "/";
+
+		aux = num/10000;
+    cout << aux;
+	
+}
 //aux será a disciplina encontrada. Se não encontrar retorna false.
 bool encontraDisciplina(Disciplina **inicio, Disciplina **aux)
 {
@@ -152,7 +173,7 @@ bool encontraDisciplina(Disciplina **inicio, Disciplina **aux)
     return true;
 }
 
-void marcarPresenca(Alunos **inicio)
+void marcarPresenca(Alunos **inicio, int aulaCarga)
 {
   Alunos *aux;
   aux = *inicio;
@@ -160,6 +181,7 @@ void marcarPresenca(Alunos **inicio)
   do
   {
     Presenca *novo = new Presenca();
+    novo->aulaCarga = aulaCarga;
     //verificação input
     while (true)
     {
@@ -191,7 +213,7 @@ void marcarPresenca(Alunos **inicio)
 }
 
 //da aula de uma determinada disciplina, pegando todas as informações necessárias.
-void darAula(Disciplina **inicio)
+void darAula(Disciplina **inicio, int padrao)
 {
   Disciplina *aux;
   int cod;
@@ -203,25 +225,45 @@ void darAula(Disciplina **inicio)
       cout << "Disciplina sem alunos.";
     else
     {
-      //marcando presenças
-      marcarPresenca(&aux->inicioAluno);
+      int dia,mes,ano,dataSemestre,dataAula;
+      dataSemestre = aux->ano * 10000;
+      if(aux->semestre == 2)dataSemestre += 601;
+
       cout << "1 para aula, 2 para prova, 3 para trabalho: ";
       cin >> op;
       if (op == 1)
       {
         Aula *novo = new Aula();
+        
         //contabilizando horas
         aux->CHRealizada += novo->qtdHoras;
 
         cout << "Digite o numero de Ordem da aula: ";
         cin >> novo->numeroOrdem;
 
-        cout << "Data da Aula: ";
-        cin >> novo->data;
+        while(true){
+        cout << "\nData da Aula DD MM YYYY: ";
+        cin >> dia >> mes >> ano;
+        
+        dataAula = ano * 10000 + mes * 100 + dia;
+        if(dataAula >= dataSemestre)break;
+
+        cout << "A data deve ser depois do inicio do semestre";
+        printaData(dataSemestre);
+        }
+
+        novo->data = dataAula;
 
         cout << "Conteudo da aula: ";
         cin.ignore();
         getline(cin, novo->conteudo);
+
+        if(padrao == 1){
+          cout << "Carga horaria da aula: ";
+          cin >> novo->qtdHoras;
+        }
+        //marcando presenças
+        marcarPresenca(&aux->inicioAluno, novo->qtdHoras);
 
         if (aux->inicioAula == NULL)
         {
@@ -282,8 +324,18 @@ void darAula(Disciplina **inicio)
             novo->tipo = 'T';
             aux->trabalhosDados++;
           }
-          cout << "Data da Atividade: ";
-          cin >> novo->data;
+          while(true){
+            cout << "\nData da Ativadade DD MM YYYY: ";
+            cin >> dia >> mes >> ano;
+        
+            dataAula = ano * 10000 + mes * 100 + dia;
+            if(dataAula >= dataSemestre)break;
+
+            cout << "A data deve ser depois do inicio do semestre";
+            printaData(dataAula);
+          }
+          novo->data = dataAula;
+
           cout << "Peso da Atividade(0.2 seria 20%): ";
           cin >> novo->peso;
           //se inicio for null, a lista está vazia.
@@ -323,6 +375,7 @@ void darAula(Disciplina **inicio)
   }
 }
 
+
 //printa as aulas de uma determinada disciplina.
 void mostraAulas(Disciplina **inicio)
 {
@@ -335,7 +388,7 @@ void mostraAulas(Disciplina **inicio)
     Aula *auxAula = aux->inicioAula;
     while (auxAula != NULL)
     {
-      cout << "\nData: " << auxAula->data;
+      printaData(auxAula->data);
       cout << "\nConteudo: " << auxAula->conteudo << "\n";
 
       auxAula = auxAula->prox;
@@ -346,9 +399,10 @@ void mostraAulas(Disciplina **inicio)
 //pega os dados da disciplina e faz verificações.
 //retorna true ou false para verificações futuras.
 //é usado para criar disciplina e editar disciplina.
-bool dadosDisciplina(Disciplina **inicio, Disciplina **novo)
+bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
 {
   int semestre, ano;
+
   do
   {
     cout << "Ano: ";
@@ -384,6 +438,21 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo)
     cout << "Codigo da Disciplina (somente numeros): ";
     cin >> (*novo)->codigo;
   } while (!codAceitavel((*novo)->codigo, novo, inicio)); //passando novo em si para não incluir ele na verificação no caso de edição.
+
+  if(padrao == 1){ //cadastro completo;
+    cout << "Carga Horaria prevista: ";
+    cin >> (*novo)->CHPrevista;
+
+    do{
+      cout << "Nota minima para aprovacao: ";
+      cin >> (*novo)->notaMin;
+    }while((*novo)->notaMin >= 0 && (*novo)->notaMin <= 10);
+
+    do{
+      cout << "Presenca minima para aprovacao: ";
+      cin >> (*novo)->frequenciaMin;
+    }while((*novo)->frequenciaMin >= 0 && (*novo)->frequenciaMin <= 100);
+  }
   return true;
 }
 
@@ -394,17 +463,17 @@ void editaDisciplina(Disciplina **inicio)
   //se encontrou a disciplina
   if (encontraDisciplina(inicio, &aux))
   {
-    dadosDisciplina(inicio, &aux);
+    dadosDisciplina(inicio, &aux, 1); //ediçao completa
   }
 }
 
 //cadastra uma disciplina.
-void cadastraDisciplina(Disciplina **inicio, Disciplina **fim)
+void cadastraDisciplina(Disciplina **inicio, Disciplina **fim, int padrao)
 {
 
   Disciplina *novo = new Disciplina();
   //se retornar false, então ja chegou ao maximo de disciplinas por semestre, e não vai incluir na lista.
-  if (dadosDisciplina(inicio, &novo))
+  if (dadosDisciplina(inicio, &novo, padrao))
   {
 
     if (*inicio == NULL)
@@ -548,6 +617,86 @@ void cadastraAluno(Disciplina **inicio)
     }
   }
 }
+
+void fechaSemestre(Disciplina **inicio){
+  Disciplina *aux;
+  if (encontraDisciplina(inicio, &aux)){
+    
+    Alunos *auxAluno = aux->inicioAluno;
+    ProvaTrab *auxProvaTrab = aux->inicioProva;
+    Aula *auxAula = aux->inicioAula;
+    float notaMaxima = 0.0;
+    
+    cout << "\nFechando semestre de " << aux->nome;
+
+    if(auxAluno !=NULL){
+      
+      bool temAvaliacao, temAula;
+
+      if(auxProvaTrab != NULL){ //significa que avaliações foram dadas
+        temAvaliacao=true; 
+        /*do{
+          notaMaxima += auxProvaTrab->peso;
+          auxProvaTrab->prox;
+
+        }while(auxProvaTrab != NULL);
+        notaMaxima = notaMaxima * 10;*/
+      }
+      if(aux->CHRealizada != 0)temAula = true;
+
+      if(temAvaliacao && temAula){
+        
+        do{
+          Presenca *auxPres;
+          auxPres = auxAluno->inicioPres;
+          float notaFinal = 0.0;
+          float presencaFinal = 0.0;
+
+          while(auxPres != NULL){
+            
+            if(auxPres->p == 'P' || auxPres->p == 'p'){
+              presencaFinal += auxPres->aulaCarga;
+            }
+            auxPres = auxPres->prox;
+          }
+          presencaFinal = presencaFinal / aux->CHRealizada;
+
+          for(int i=0;i<14;i++){
+            if(auxAluno->notas[i].nota != -1)
+              notaFinal += auxAluno->notas[i].nota * auxAluno->notas[i].peso;
+          }
+          presencaFinal = presencaFinal * 100;
+          if(presencaFinal > aux->frequenciaMin && notaFinal > aux->notaMin)auxAluno->aprovado = true;
+          else if(presencaFinal > aux->frequenciaMin && notaFinal < aux->notaMin)auxAluno->exame = true;
+
+          cout << "\nAluno: " << auxAluno->nome;
+          cout << "\nNota final: " << notaFinal;
+          cout << "\nPercentual de presenca: " << presencaFinal;
+          if(auxAluno->aprovado) cout << "\nAprovado: true";
+          else{
+            cout << "\nAprovado: false";
+            (auxAluno->exame) ? cout <<"\nEsta de exame: true\n" : cout << "\nEsta de exame: false\n";
+          }
+          
+
+
+          auxAluno = auxAluno->prox;
+        }while(auxAluno != aux->inicioAluno);
+        
+      }
+      else if(!temAvaliacao && !temAula)cout << "\nNao eh possivel dar notas sem avaliacoes e presenca sem aulas";
+      else if(!temAvaliacao)cout << "\nNao ha avaliacoes";
+      else cout << "\nNao ha aulas";
+      
+    }
+    else{
+      cout << "\nSemestre fechado sem alunos";
+    }
+    
+
+
+  }
+}
 //printa as informações dos alunos de uma disciplina.
 void printaAluno(Disciplina **inicio)
 {
@@ -604,12 +753,14 @@ int main()
   Disciplina *inicio = NULL, *fim = NULL;
 
   string nome;
-  int qtdDisciplinas, op;
-
+  int qtdDisciplinas, op, padrao;
   cout << "Sistema de Notas e Frequencias";
   cout << "\nNome do professor: ";
   cin.ignore();
   getline(cin, nome);
+  cout << "\n1- Fazer cadastramento completo da disciplina";
+  cout << "\n2- Utilizar algumas propriedades padrao";
+  cin >> padrao;
 
   do
   {
@@ -618,9 +769,10 @@ int main()
     cout << "\n2- Editar Disciplina";
     cout << "\n3- Mostrar Disciplinas";
     cout << "\n4- Mostrar alunos de determinada disciplina";
-    cout << "\n5- Ministrar aula de uma disciplina";
-    cout << "\n6- Mostrar aulas de uma Disciplina"; //ajeitar data
+    cout << "\n5- Ministrar aula de uma disciplina / Avaliacao";
+    cout << "\n6- Mostrar aulas de uma Disciplina"; 
     cout << "\n7- Cadastrar alunos em uma Disciplina";
+    cout << "\n8- Fechar semestre de uma Disciplina"; 
     cout << "\nSua escolha: ";
 
     cin >> op;
@@ -628,7 +780,7 @@ int main()
     switch (op)
     {
     case 1:
-      cadastraDisciplina(&inicio, &fim);
+      cadastraDisciplina(&inicio, &fim, padrao);
       qtdDisciplinas++;
       break;
     case 2:
@@ -641,7 +793,7 @@ int main()
       printaAluno(&inicio);
       break;
     case 5:
-      darAula(&inicio);
+      darAula(&inicio, padrao);
       break;
     case 6:
       mostraAulas(&inicio);
@@ -649,6 +801,8 @@ int main()
     case 7:
       cadastraAluno(&inicio);
       break;
+    case 8:
+      fechaSemestre(&inicio);
     default:
       break;
     }
