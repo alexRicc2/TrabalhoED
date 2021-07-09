@@ -10,18 +10,27 @@ struct Presenca
   Presenca *ant;
 };
 
+//será um vetor de 14 posições.
+struct Nota
+{
+  string nome;
+  float nota = -1; //-1 para saber quando parar de ler o vetor.
+  float peso = -1;
+};
+
 //lista duplamente encadeada circular ordenada alfabeticamente.
 struct Alunos
 {
   int numero;
   string nome;
-  float notas[14];
+  Nota notas[14];
   float exame;
   Alunos *prox;
   Alunos *ant;
   Presenca *inicioPres = NULL, *fimPres = NULL;
 };
 
+//lista simplesmente encadeada ordenada
 struct Aula
 {
   int numeroOrdem;
@@ -31,6 +40,17 @@ struct Aula
   Aula *prox;
 };
 
+//lista simplesmente encadeada
+struct ProvaTrab
+{
+  string nome;
+  char tipo; //P T E
+  int data;
+  float peso; //0.2 20%;
+  ProvaTrab *prox;
+};
+
+//lista simplesmente encadeada ordenada
 struct Disciplina
 {
   int codigo;
@@ -38,13 +58,16 @@ struct Disciplina
   int ano, semestre;
   int quantAlunos;
   int quantProvas;
+  int provasDadas = 0;
   int quantTrabalhos;
+  int trabalhosDados = 0;
   int CHPrevista = 60;
   int CHRealizada = 0;
   float notaMin = 5.0;
   int frequenciaMin = 70;
   Disciplina *prox;
   Aula *inicioAula = NULL, *fimAula = NULL;
+  ProvaTrab *inicioProva = NULL, *fimProva = NULL;
   Alunos *inicioAluno = NULL, *fimAluno = NULL;
 };
 
@@ -97,7 +120,7 @@ void mostraDisciplinas(Disciplina **inicio)
   {
     cout << "\n"
          << aux->nome << " codigo: " << aux->codigo << "\nCarga horaria prevista: "
-         << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\nNumero de alunos: " << aux->quantAlunos << "\n/----------------/";
+         << aux->CHPrevista << "\nCarga horaria cumprida: " << aux->CHRealizada << "\nNumero de alunos: " << aux->quantAlunos << "\nProvas dadas: " << aux->provasDadas << "\nTrabalhos dados: " << aux->trabalhosDados << "\n/----------------/";
     aux = aux->prox;
   }
 }
@@ -172,6 +195,7 @@ void darAula(Disciplina **inicio)
 {
   Disciplina *aux;
   int cod;
+  int op;
   //se encontrou a disciplina
   if (encontraDisciplina(inicio, &aux))
   { //se não tem alunos não tem como dar a aula.
@@ -179,52 +203,120 @@ void darAula(Disciplina **inicio)
       cout << "Disciplina sem alunos.";
     else
     {
-      Aula *novo = new Aula();
-      //contabilizando horas
-      aux->CHRealizada += novo->qtdHoras;
       //marcando presenças
       marcarPresenca(&aux->inicioAluno);
-
-      cout << "Digite o numero de Ordem da aula: ";
-      cin >> novo->numeroOrdem;
-
-      cout << "Data da Aula: ";
-      cin >> novo->data;
-
-      cout << "Conteudo da aula: ";
-      cin.ignore();
-      getline(cin, novo->conteudo);
-
-      if (aux->inicioAula == NULL)
+      cout << "1 para aula, 2 para prova, 3 para trabalho: ";
+      cin >> op;
+      if (op == 1)
       {
-        novo->prox = NULL;
-        aux->inicioAula = novo;
-        aux->fimAula = novo;
-      }
-      else
-      {
-        Aula *auxAula = aux->inicioAula;
-        Aula *anterior = NULL;
-        while (auxAula != NULL && novo->numeroOrdem > auxAula->numeroOrdem)
-        {
-          anterior = auxAula;
-          auxAula = auxAula->prox;
-        }
-        if (anterior == NULL)
-        {
-          novo->prox = auxAula;
-          aux->inicioAula = novo;
-        }
-        else if (auxAula == NULL)
+        Aula *novo = new Aula();
+        //contabilizando horas
+        aux->CHRealizada += novo->qtdHoras;
+
+        cout << "Digite o numero de Ordem da aula: ";
+        cin >> novo->numeroOrdem;
+
+        cout << "Data da Aula: ";
+        cin >> novo->data;
+
+        cout << "Conteudo da aula: ";
+        cin.ignore();
+        getline(cin, novo->conteudo);
+
+        if (aux->inicioAula == NULL)
         {
           novo->prox = NULL;
-          aux->fimAula->prox = novo;
+          aux->inicioAula = novo;
           aux->fimAula = novo;
         }
         else
         {
-          anterior->prox = novo;
-          novo->prox = auxAula;
+          Aula *auxAula = aux->inicioAula;
+          Aula *anterior = NULL;
+          while (auxAula != NULL && novo->numeroOrdem > auxAula->numeroOrdem)
+          {
+            anterior = auxAula;
+            auxAula = auxAula->prox;
+          }
+          if (anterior == NULL)
+          {
+            novo->prox = auxAula;
+            aux->inicioAula = novo;
+          }
+          else if (auxAula == NULL)
+          {
+            novo->prox = NULL;
+            aux->fimAula->prox = novo;
+            aux->fimAula = novo;
+          }
+          else
+          {
+            anterior->prox = novo;
+            novo->prox = auxAula;
+          }
+        }
+      }
+      //se for aula de prova/trabalho
+      else if (op == 2 || op == 3)
+      {
+        ProvaTrab *novo = new ProvaTrab();
+        //checando se não ultrapassou o limite.
+        if ((aux->provasDadas >= 4 && op == 2) || (aux->trabalhosDados >= 10 && op == 3))
+        {
+          cout << "Nao e possivel dar mais uma dessa atividade.";
+          delete (novo);
+        }
+        else
+        {
+          cout << "Digite o nome da atividade: ";
+          cin.ignore();
+          getline(cin, novo->nome);
+          //atribuindo tipo e incrementando numero de provas/trabalhos dados.
+          if (op == 2)
+          {
+            novo->tipo = 'P';
+            aux->provasDadas++;
+          }
+          else if (op == 3)
+          {
+            novo->tipo = 'T';
+            aux->trabalhosDados++;
+          }
+          cout << "Data da Atividade: ";
+          cin >> novo->data;
+          cout << "Peso da Atividade(0.2 seria 20%): ";
+          cin >> novo->peso;
+          //se inicio for null, a lista está vazia.
+          if (aux->inicioProva == NULL)
+          {
+            aux->inicioProva = novo;
+            aux->fimProva = novo;
+            novo->prox = NULL;
+          }
+          //se não, coloca no final.
+          else
+          {
+            aux->fimProva->prox = novo;
+            novo->prox = NULL;
+            aux->fimProva = novo;
+          }
+          //aplicando notas para cada aluno da disciplina.
+          Alunos *auxAlunos = aux->inicioAluno;
+          do
+          {
+            for (int i = 0; i < 14; i++)
+            {
+              if (auxAlunos->notas[i].nota == -1)
+              {
+                cout << "Digite a nota do aluno " << auxAlunos->nome << ": ";
+                cin >> auxAlunos->notas[i].nota;
+                auxAlunos->notas[i].peso = novo->peso;
+                auxAlunos->notas[i].nome = novo->nome;
+                break;
+              }
+            }
+            auxAlunos = auxAlunos->prox;
+          } while (auxAlunos != aux->inicioAluno);
         }
       }
     }
@@ -485,6 +577,19 @@ void printaAluno(Disciplina **inicio)
             auxPresenca = auxPresenca->prox;
           } while (auxPresenca != NULL);
         }
+        //se ja tiver tido pelomenos uma nota atribuida
+        if (auxAlunos->notas[0].nota != -1)
+        {
+          cout << "\nNotas: \n";
+          //enquanto não passar de 14 e não encontrar uma posição vazia(indicada por -1)
+          for (int i = 0; auxAlunos->notas[i].nota != -1 && i < 14; i++)
+          {
+            cout << "Nome: " << auxAlunos->notas[i].nome << "\n"
+                 << "Peso: " << auxAlunos->notas[i].peso << "\n"
+                 << "Nota: " << auxAlunos->notas[i].nota << "\n";
+            cout << "/----/\n";
+          }
+        }
         auxAlunos = auxAlunos->prox;
         cout << "\n/-----------------------/\n";
       } while (auxAlunos != aux->inicioAluno);
@@ -514,9 +619,8 @@ int main()
     cout << "\n3- Mostrar Disciplinas";
     cout << "\n4- Mostrar alunos de determinada disciplina";
     cout << "\n5- Ministrar aula de uma disciplina";
-    cout << "\n6- Mostrar aulas de uma Disciplina";          //ajeitar data
+    cout << "\n6- Mostrar aulas de uma Disciplina"; //ajeitar data
     cout << "\n7- Cadastrar alunos em uma Disciplina";
-    cout << "\n4- Remover Disciplina (nao feito)"; //acho q n tem q fazer esse n, mas dps ve
     cout << "\nSua escolha: ";
 
     cin >> op;
