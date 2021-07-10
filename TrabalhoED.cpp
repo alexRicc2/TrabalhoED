@@ -157,7 +157,7 @@ void mostraDisciplinas(Disciplina **inicio)
 
                 //contabiliza as presencas de um aluno
                 while(auxPres != NULL){
-                  if(auxPres->p == 'f')faltas++;
+                  if(auxPres->p == 'f' || auxPres->p == 'F')faltas++;
                   else presente++;
 
                   auxPres = auxPres->prox;
@@ -721,7 +721,7 @@ void fechaSemestre(Disciplina **inicio){
     //a disciplina sendo fechada possui alunos
     if(auxAluno != NULL){
       
-      bool temAvaliacao, temAula;
+      bool temAvaliacao=false, temAula=false;
 
       if(auxProvaTrab != NULL)temAvaliacao=true; 
       if(aux->CHRealizada != 0)temAula = true;
@@ -747,8 +747,8 @@ void fechaSemestre(Disciplina **inicio){
           }
           auxAluno->media = notaFinal;
 
-          if(presencaFinal > aux->frequenciaMin && notaFinal > aux->notaMin)auxAluno->aprovado = true;
-          else if(presencaFinal > aux->frequenciaMin && notaFinal < aux->notaMin)auxAluno->exame = true;
+          if(presencaFinal >= aux->frequenciaMin && notaFinal >= aux->notaMin)auxAluno->aprovado = true;
+          else if(presencaFinal >= aux->frequenciaMin && notaFinal < aux->notaMin)auxAluno->exame = true;
 
           cout << "\nAluno: " << auxAluno->nome;
           cout << "\nNota final: " << auxAluno->media;
@@ -785,9 +785,9 @@ void fechaSemestre(Disciplina **inicio){
         
       }
       //caso tente fechar o semestre possuindo alunos, porem sem avaliacoes ou aulas
-      else if(!temAvaliacao && !temAula)cout << "\nNao eh possivel dar notas sem avaliacoes e presenca sem aulas";
-      else if(!temAvaliacao)cout << "\nNao "<< aux->nome<< " possui avaliacoes";
-      else cout << "\nNao "<<  aux->nome <<" possui aulas";
+      else if(!temAvaliacao && !temAula)cout << "\nNao eh possivel dar notas sem avaliacoes e presenca sem aulas.";
+      else if(!temAvaliacao)cout << "\n"<< aux->nome << "nao possui avaliacoes.";
+      else cout << "\n" << aux->nome << "nao possui aulas.";
       
     }
     //fechando semestre sem alunos
