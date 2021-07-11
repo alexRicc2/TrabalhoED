@@ -99,6 +99,11 @@ bool codAceitavel(int codigo, Disciplina **atual, Disciplina **inicio)
 {
   Disciplina *aux;
   aux = *inicio;
+  if (codigo < 0)
+  {
+    cout << "Codigo invalido.\n";
+    return false;
+  }
   while (aux != NULL)
   { //no caso de se editar uma disciplina, é necessária a verificação adicional de aux ser diferente
     //da que está sendo editada.
@@ -126,8 +131,10 @@ void mostraDisciplinas(Disciplina **inicio, bool op = 0)
 
   while (aux != NULL)
   {
-    if (op == 1)
+    if (op == 1){
       myfile.open(aux->nome + ".txt");
+      cout << "\nArquivo " << aux->nome << ".txt criado.\n";
+    }
     int qtdAvaliacoes = aux->provasDadas + aux->trabalhosDados;
     int faltas = 0, presente = 0;
 
@@ -259,8 +266,15 @@ bool encontraDisciplina(Disciplina **inicio, Disciplina **aux)
   //printa as disciplinas
   mostraDisciplinas(inicio);
   int cod;
-  cout << "\nDigite o codigo da Disciplina: ";
-  cin >> cod;
+  while (true)
+  {
+    cout << "\nDigite o codigo da Disciplina: ";
+    cin >> cod;
+    if (cod >= 0)
+      break;
+    else
+      cout << "\nOpcao invalida.";
+  }
 
   *aux = *inicio;
   //procurando a disciplina
@@ -339,18 +353,30 @@ void darAula(Disciplina **inicio, int padrao)
       dataSemestre = aux->ano * 10000;
       if (aux->semestre == 2)
         dataSemestre += 601;
-
-      cout << "1 para aula, 2 para prova, 3 para trabalho: ";
-      cin >> op;
+      while (true)
+      {
+        cout << "1 para aula, 2 para prova, 3 para trabalho: ";
+        cin >> op;
+        if (op > 0 && op < 4)
+          break;
+        else
+          cout << "Opcao invalida.\n";
+      }
       if (op == 1)
       {
         Aula *novo = new Aula();
 
         //contabilizando horas
         aux->CHRealizada += novo->qtdHoras;
-
-        cout << "Digite o numero de Ordem da aula: ";
-        cin >> novo->numeroOrdem;
+        while (true)
+        {
+          cout << "Digite o numero de Ordem da aula: ";
+          cin >> novo->numeroOrdem;
+          if (novo->numeroOrdem >= 0)
+            break;
+          else
+            cout << "Opcao invalida.\n";
+        }
 
         //verificacao de data ser apos inicio do semestre
         while (true)
@@ -453,9 +479,15 @@ void darAula(Disciplina **inicio, int padrao)
             printaData(dataAula);
           }
           novo->data = dataAula;
-
-          cout << "Peso da Atividade(0.2 seria 20%): ";
-          cin >> novo->peso;
+          while (true)
+          {
+            cout << "Peso da Atividade(0.2 seria 20%): ";
+            cin >> novo->peso;
+            if (novo->peso > 0 && novo->peso <= 1)
+              break;
+            else
+              cout << "Opcao invalida.\n";
+          }
           //se inicio for null, a lista está vazia.
           if (aux->inicioProva == NULL)
           {
@@ -478,8 +510,15 @@ void darAula(Disciplina **inicio, int padrao)
             {
               if (auxAlunos->notas[i].nota == -1)
               {
-                cout << "Digite a nota do aluno " << auxAlunos->nome << ": ";
-                cin >> auxAlunos->notas[i].nota;
+                while (true)
+                {
+                  cout << "Digite a nota do aluno " << auxAlunos->nome << ": ";
+                  cin >> auxAlunos->notas[i].nota;
+                  if (auxAlunos->notas[i].nota > 0 && auxAlunos->notas[i].nota <= 10)
+                    break;
+                  else
+                    cout << "Nota invalida.\n";
+                }
                 auxAlunos->notas[i].peso = novo->peso;
                 auxAlunos->notas[i].nome = novo->nome;
                 break;
@@ -520,17 +559,25 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
 {
   int semestre, ano;
 
-  do
+  while (true)
   {
     cout << "Ano [2013 - 2030]: ";
     cin >> ano;
-  } while (ano < 2013 || ano > 2030);
+    if (ano >= 2013 && ano <= 2030)
+      break;
+    else
+      cout << "Ano invalido.\n";
+  }
 
-  do
+  while (true)
   {
     cout << "Semestre [1 ou 2]: ";
     cin >> semestre;
-  } while (semestre != 1 && semestre != 2);
+    if (semestre > 0 && semestre < 3)
+      break;
+    else
+      cout << "Semestre invalido.\n";
+  }
 
   if (!semestreAceitavel(ano, semestre, inicio))
   {
@@ -562,17 +609,25 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
     cout << "Carga Horaria prevista: ";
     cin >> (*novo)->CHPrevista;
 
-    do
+    while (true)
     {
       cout << "Nota minima para aprovacao [0 a 10]: ";
       cin >> (*novo)->notaMin;
-    } while ((*novo)->notaMin < 0 || (*novo)->notaMin > 10);
+      if ((*novo)->notaMin > 0 && (*novo)->notaMin <= 10)
+        break;
+      else
+        cout << "Nota invalida.\n";
+    }
 
-    do
+    while (true)
     {
       cout << "Presenca minima para aprovacao [0 a 100]: ";
       cin >> (*novo)->frequenciaMin;
-    } while ((*novo)->frequenciaMin < 0 || (*novo)->frequenciaMin > 100);
+      if ((*novo)->frequenciaMin > 0 && (*novo)->frequenciaMin <= 100)
+        break;
+      else
+        cout << "Opcao invalida.\n";
+    }
   }
   return true;
 }
@@ -659,8 +714,14 @@ void cadastraAluno(Disciplina **inicio)
       //maximo de 50
       while (true)
       {
-        cout << "\nDigite o numero de alunos que deseja cadastrar: ";
-        cin >> numAlunos;
+        while(true){
+          cout << "\nDigite o numero de alunos que deseja cadastrar: ";
+          cin >> numAlunos;
+          if(numAlunos>0)
+            break;
+          else
+            cout << "Numero invalido.";
+        }
         if (numAlunos + aux->quantAlunos <= 50)
           break;
         else
@@ -672,7 +733,7 @@ void cadastraAluno(Disciplina **inicio)
         Alunos *novo = new Alunos();
         Alunos *auxAlunos;
         //pega o nome primeiro para ordenar a lista
-        cout << "\nDigite o nome do aluno: ";
+        cout << "Digite o nome do aluno: ";
         cin >> novo->nome;
         //se vazia
         if (aux->inicioAluno == NULL)
@@ -725,13 +786,20 @@ void cadastraAluno(Disciplina **inicio)
         {
           auxAlunos = aux->inicioAluno;
           achou = 0;
-          cout << "\nDigite o numero do aluno: ";
-          cin >> novo->numero;
+          while (true)
+          {
+            cout << "Digite o numero do aluno: ";
+            cin >> novo->numero;
+            if (novo->numero >= 0)
+              break;
+            else
+              cout << "Opcao invalida.\n";
+          }
           do
           {
             if (novo->numero == auxAlunos->numero && auxAlunos != novo)
             {
-              cout << "\nNumero ja existente.";
+              cout << "Numero ja existente.\n";
               achou = 1;
               break;
             }
@@ -836,8 +904,15 @@ void fechaSemestre(Disciplina **inicio)
               cout << "\nEsta de exame: true";
               cout << "\nNota necessaria no exame para " << auxAluno->nome << " passar: " << aux->notaMin * 2 - auxAluno->media;
               cout << "\n--Aplicando exame para " << auxAluno->nome << "--";
-              cout << "\nNota no exame: ";
-              cin >> auxAluno->notaExame;
+              while (true)
+              {
+                cout << "\nNota no exame: ";
+                cin >> auxAluno->notaExame;
+                if (auxAluno->notaExame >= 0 && auxAluno->notaExame <= 10)
+                  break;
+                else
+                  cout << "\nNota invalida";
+              }
 
               auxAluno->media = (auxAluno->media + auxAluno->notaExame) / 2;
 
@@ -937,8 +1012,15 @@ void printaAlunoAux(Disciplina **aux, bool opFile, bool opAluno = 0)
   //se for true, então é pra printar apenas um aluno.
   if (opAluno)
   {
-    cout << "Digite o numero do aluno: ";
-    cin >> numero;
+    while (true)
+    {
+      cout << "Digite o numero do aluno: ";
+      cin >> numero;
+      if (numero >= 0)
+        break;
+      else
+        cout << "Opcao invalida.\n";
+    }
     do
     {
       if (auxAlunos->numero == numero)
@@ -1003,9 +1085,9 @@ void printaAlunoAux(Disciplina **aux, bool opFile, bool opAluno = 0)
       if (auxAlunos->notas[0].nota != -1)
       {
         if (opFile == 1)
-          myfile << "/----Notas----/: \n";
+          myfile << "/----Notas----/ \n";
         else
-          cout << "/----Notas----/: \n";
+          cout << "/----Notas----/ \n";
         //enquanto não passar de 14 e não encontrar uma posição vazia(indicada por -1)
         for (int i = 0; auxAlunos->notas[i].nota != -1 && i < 14; i++)
         {
@@ -1043,7 +1125,8 @@ void printaAlunoAux(Disciplina **aux, bool opFile, bool opAluno = 0)
     } while (auxAlunos != (*aux)->inicioAluno && !opAluno);
   }
   else
-    cout << "Nao existem alunos nessa disciplina.\n";
+    if(!opFile)
+    cout << "\nNao existem alunos nessa disciplina.";
 }
 
 //printa as informações dos alunos de uma disciplina.
@@ -1100,28 +1183,43 @@ int main()
   cout << "\nNome do professor: ";
   cin.ignore();
   getline(cin, nome);
-  cout << "\n1- Fazer cadastramentos completos";
-  cout << "\n2- Utilizar algumas propriedades padrao";
-  cout << "\nEscolha: ";
-  cin >> padrao;
+  while (true)
+  {
+    cout << "\n1- Fazer cadastramentos completos";
+    cout << "\n2- Utilizar algumas propriedades padrao";
+    cout << "\nEscolha: ";
+    cin >> padrao;
+    if (padrao == 1 || padrao == 2)
+      break;
+    else
+      cout << "Escolha invalida.\n";
+  }
 
   do
   {
-    cout << "\n\nSistema de Notas e Frequencias";
-    cout << "\n1- Cadastra nova Disciplina";
-    cout << "\n2- Editar Disciplina";
-    cout << "\n3- Mostrar Disciplinas";
-    cout << "\n4- Mostrar alunos de determinada disciplina";
-    cout << "\n5- Mostrar um aluno de uma disciplina";
-    cout << "\n6- Ministrar aula de uma disciplina / dar Avaliacao";
-    cout << "\n7- Mostrar aulas de uma Disciplina";
-    cout << "\n8- Cadastrar alunos em uma Disciplina";
-    cout << "\n9- Fechamento de semestre com Aplicacao de exames/recuperacao";
-    cout << "\n10- Relatorio dos Aprovados e Reprovados";
-    cout << "\n11- Imprimir relatório geral de cada disciplina";
-    cout << "\nSua escolha: ";
+    while (true)
+    {
+      cout << "\n\nSistema de Notas e Frequencias";
+      cout << "\n1- Cadastra nova Disciplina";
+      cout << "\n2- Editar Disciplina";
+      cout << "\n3- Mostrar Disciplinas";
+      cout << "\n4- Mostrar alunos de determinada disciplina";
+      cout << "\n5- Mostrar um aluno de uma disciplina";
+      cout << "\n6- Ministrar aula de uma disciplina / dar Avaliacao";
+      cout << "\n7- Mostrar aulas de uma Disciplina";
+      cout << "\n8- Cadastrar alunos em uma Disciplina";
+      cout << "\n9- Fechamento de semestre com Aplicacao de exames/recuperacao";
+      cout << "\n10- Relatorio dos Aprovados e Reprovados";
+      cout << "\n11- Imprimir relatório geral de cada disciplina";
+      cout << "\n12- Sair";
+      cout << "\nSua escolha: ";
 
-    cin >> op;
+      cin >> op;
+      if (op > 0 && op < 13)
+        break;
+      else
+        cout << "\nEscolha invalida.";
+    }
 
     switch (op)
     {
@@ -1162,5 +1260,5 @@ int main()
       break;
     }
 
-  } while (op != 0);
+  } while (op != 12);
 }
