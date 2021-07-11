@@ -118,6 +118,7 @@ bool codAceitavel(int codigo, Disciplina **atual, Disciplina **inicio)
 }
 
 //printa disciplinas.
+//se op for 1(ou true), ira printar em arquivo.
 void mostraDisciplinas(Disciplina **inicio, bool op = 0)
 {
   ofstream myfile;
@@ -131,7 +132,8 @@ void mostraDisciplinas(Disciplina **inicio, bool op = 0)
 
   while (aux != NULL)
   {
-    if (op == 1){
+    if (op == 1)
+    {
       myfile.open(aux->nome + ".txt");
       cout << "\nArquivo " << aux->nome << ".txt criado.\n";
     }
@@ -191,7 +193,7 @@ void mostraDisciplinas(Disciplina **inicio, bool op = 0)
         auxAluno = auxAluno->prox;
       } while (auxAluno != aux->inicioAluno);
 
-      //printando infromacoes de notas caso foram dadas
+      //printando informacoes de notas caso foram dadas
       if (qtdAvaliacoes > 0)
       {
         if (op == 1)
@@ -403,9 +405,9 @@ void darAula(Disciplina **inicio, int padrao)
           cout << "Carga horaria da aula: ";
           cin >> novo->qtdHoras;
         }
-        //marcando presenças
+        //marcando presenças e adicionando à lista.
         marcarPresenca(&aux->inicioAluno, novo->qtdHoras);
-
+        //adicionando aula a lista.
         if (aux->inicioAula == NULL)
         {
           novo->prox = NULL;
@@ -587,7 +589,7 @@ bool dadosDisciplina(Disciplina **inicio, Disciplina **novo, int padrao)
   }
   else
   {
-    //é necessario atribuit a aux somente após verificação no caso de edição de uma disciplina.
+    //é necessario atribuir a aux somente após verificação no caso de edição de uma disciplina.
     (*novo)->semestre = semestre;
     (*novo)->ano = ano;
   }
@@ -714,10 +716,12 @@ void cadastraAluno(Disciplina **inicio)
       //maximo de 50
       while (true)
       {
-        while(true){
+        //nao pode numero negativo
+        while (true)
+        {
           cout << "\nDigite o numero de alunos que deseja cadastrar: ";
           cin >> numAlunos;
-          if(numAlunos>0)
+          if (numAlunos > 0)
             break;
           else
             cout << "Numero invalido.";
@@ -1112,20 +1116,29 @@ void printaAlunoAux(Disciplina **aux, bool opFile, bool opAluno = 0)
         if (opFile == 1)
         {
           myfile << "Media Final: " << auxAlunos->media << "\nSituacao: ";
-          (auxAlunos->aprovado) ? myfile << "Aprovado\n" : myfile << "Reprovado\n";
+          if (auxAlunos->aprovado)
+            myfile << "Aprovado.\n";
+          else if (auxAlunos->media < (*aux)->notaMin)
+            myfile << "Reprovado por nota.\n";
+          else
+            myfile << "Reprovado por presenca.\n";
         }
         else
         {
-          cout << "Media Final: " << auxAlunos->media << "\n Situacao: ";
-          (auxAlunos->aprovado) ? cout << "Aprovado\n" : cout << "Reprovado\n";
+          cout << "Media Final: " << auxAlunos->media << "\nSituacao: ";
+          if (auxAlunos->aprovado)
+            cout << "Aprovado.\n";
+          else if (auxAlunos->media < (*aux)->notaMin)
+            cout << "Reprovado por nota.\n";
+          else
+            cout << "Reprovado por presenca.\n";
         }
       }
       auxAlunos = auxAlunos->prox;
       //enquanto não chegar ao fim, e não opAluno(se for true, vai printar só um aluno.)
     } while (auxAlunos != (*aux)->inicioAluno && !opAluno);
   }
-  else
-    if(!opFile)
+  else if (!opFile)
     cout << "\nNao existem alunos nessa disciplina.";
 }
 
@@ -1161,6 +1174,7 @@ void printaAluno(Disciplina **inicio, bool opFile = 0, int op = 0)
   }
 }
 
+//imprime em arquivos separados para cada disciplina os dados dela e dos alunos.
 void printaRelatorioTotal(Disciplina **inicio)
 {
   Disciplina *aux = *inicio;
@@ -1259,6 +1273,5 @@ int main()
     default:
       break;
     }
-
   } while (op != 12);
 }
