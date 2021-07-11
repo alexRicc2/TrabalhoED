@@ -862,10 +862,10 @@ void fechaSemestre(Disciplina **inicio)
         cout << "\nNao eh possivel dar notas sem avaliacoes e presenca sem aulas.";
       else if (!temAvaliacao)
         cout << "\n"
-             << aux->nome << "nao possui avaliacoes.";
+             << aux->nome << " Nao possui avaliacoes.";
       else
         cout << "\n"
-             << aux->nome << "nao possui aulas.";
+             << aux->nome << " Nao possui aulas.";
     }
     //fechando semestre sem alunos
     else
@@ -924,14 +924,36 @@ void printaAprovadosReprovados(Disciplina **inicio)
   }
 }
 //função usada na função printaAlunos
-void printaAlunoAux(Disciplina **aux, int op)
+void printaAlunoAux(Disciplina **aux, bool opFile, bool opAluno = 0)
 {
   ofstream myfile;
   Alunos *auxAlunos;
   Presenca *auxPresenca;
-  if (op == 1)
+  int numero;
+  int achou = 0;
+  if (opFile == 1)
     myfile.open((*aux)->nome + ".txt", ios_base::app);
   auxAlunos = (*aux)->inicioAluno;
+  //se for true, então é pra printar apenas um aluno.
+  if (opAluno)
+  {
+    cout << "Digite o numero do aluno: ";
+    cin >> numero;
+    do
+    {
+      if (auxAlunos->numero == numero)
+      {
+        achou = 1;
+        break;
+      }
+      auxAlunos = auxAlunos->prox;
+    } while (auxAlunos != (*aux)->inicioAluno);
+    if (!achou)
+    {
+      cout << "Aluno nao encontrado.\n";
+      return;
+    }
+  }
   //se ela tiver alunos
   if (auxAlunos != NULL)
   {
@@ -939,12 +961,18 @@ void printaAlunoAux(Disciplina **aux, int op)
     {
       auxPresenca = auxAlunos->inicioPres;
       //printa numero e nome
-      if (op == 1)
-        myfile << "Numero: " << auxAlunos->numero << "\n"
-               << "Nome: " << auxAlunos->nome << "\n";
+      if (opFile == 1)
+      {
+        myfile << "\n/--------------/\n";
+        myfile << "Nome: " << auxAlunos->nome << "\n"
+               << "Numero: " << auxAlunos->numero << "\n";
+      }
       else
-        cout << "Numero: " << auxAlunos->numero << "\n"
-             << "Nome: " << auxAlunos->nome << "\n";
+      {
+        cout << "\n/----------------/\n";
+        cout << "Nome: " << auxAlunos->nome << "\n"
+             << "Numero: " << auxAlunos->numero << "\n";
+      }
       auxPresenca = auxAlunos->inicioPres;
       //se ja tiver tido pelomenos uma aula, printa as presenças.
       if (auxPresenca != NULL)
@@ -958,7 +986,7 @@ void printaAlunoAux(Disciplina **aux, int op)
             faltas++;
           auxPresenca = auxPresenca->prox;
         } while (auxPresenca != NULL);
-        if (op == 1)
+        if (opFile == 1)
         {
           myfile << "Presencas: " << presencas << "\n";
           myfile << "Faltas: " << faltas << "\n";
@@ -974,32 +1002,32 @@ void printaAlunoAux(Disciplina **aux, int op)
       //se ja tiver tido pelomenos uma nota atribuida
       if (auxAlunos->notas[0].nota != -1)
       {
-        if (op == 1)
+        if (opFile == 1)
           myfile << "/----Notas----/: \n";
         else
           cout << "/----Notas----/: \n";
         //enquanto não passar de 14 e não encontrar uma posição vazia(indicada por -1)
         for (int i = 0; auxAlunos->notas[i].nota != -1 && i < 14; i++)
         {
-          if (op == 1)
+          if (opFile == 1)
           {
             myfile << "Nome: " << auxAlunos->notas[i].nome << "\n"
                    << "Peso: " << auxAlunos->notas[i].peso << "\n"
                    << "Nota: " << auxAlunos->notas[i].nota << "\n";
-            myfile << "/----/\n";
+            myfile << "/-------/\n";
           }
           else
           {
             cout << "Nome: " << auxAlunos->notas[i].nome << "\n"
                  << "Peso: " << auxAlunos->notas[i].peso << "\n"
                  << "Nota: " << auxAlunos->notas[i].nota << "\n";
-            cout << "/----/\n";
+            cout << "/-------/\n";
           }
         }
       }
       if ((*aux)->semestreFechado)
       {
-        if (op == 1)
+        if (opFile == 1)
         {
           myfile << "Media Final: " << auxAlunos->media << "\nSituacao: ";
           (auxAlunos->aprovado) ? myfile << "Aprovado\n" : myfile << "Reprovado\n";
@@ -1011,36 +1039,41 @@ void printaAlunoAux(Disciplina **aux, int op)
         }
       }
       auxAlunos = auxAlunos->prox;
-      if (op == 1)
-        myfile << "\n/-----------------------/\n";
-      else
-        cout << "\n/-----------------------/\n";
-    } while (auxAlunos != (*aux)->inicioAluno);
+      //enquanto não chegar ao fim, e não opAluno(se for true, vai printar só um aluno.)
+    } while (auxAlunos != (*aux)->inicioAluno && !opAluno);
   }
   else
     cout << "Nao existem alunos nessa disciplina.\n";
 }
 
 //printa as informações dos alunos de uma disciplina.
-void printaAluno(Disciplina **inicio, bool op = 0, bool todas = 0)
+void printaAluno(Disciplina **inicio, bool opFile = 0, int op = 0)
 {
   Disciplina *aux;
   //se quiser printar alunos de todas as disciplinas
-  if (todas)
+  if (op == 3)
   {
     aux = *inicio;
     do
     {
-      printaAlunoAux(&aux, op);
+      printaAlunoAux(&aux, opFile);
       aux = aux->prox;
     } while (aux != NULL);
   }
   //se quiser de uma só disciplina
-  else
+  else if (op == 2)
   {
     if (encontraDisciplina(inicio, &aux))
     {
-      printaAlunoAux(&aux, op);
+      printaAlunoAux(&aux, opFile);
+    }
+  }
+  //printa um aluno de uma disciplina.
+  else if (op == 1)
+  {
+    if (encontraDisciplina(inicio, &aux))
+    {
+      printaAlunoAux(&aux, opFile, 1);
     }
   }
 }
@@ -1053,7 +1086,7 @@ void printaRelatorioTotal(Disciplina **inicio)
   else
   {
     mostraDisciplinas(inicio, 1);
-    printaAluno(inicio, 1, 1);
+    printaAluno(inicio, 1, 3);
   }
 }
 
@@ -1079,12 +1112,13 @@ int main()
     cout << "\n2- Editar Disciplina";
     cout << "\n3- Mostrar Disciplinas";
     cout << "\n4- Mostrar alunos de determinada disciplina";
-    cout << "\n5- Ministrar aula de uma disciplina / dar Avaliacao";
-    cout << "\n6- Mostrar aulas de uma Disciplina";
-    cout << "\n7- Cadastrar alunos em uma Disciplina";
-    cout << "\n8- Fechamento de semestre com Aplicacao de exames/recuperacao";
-    cout << "\n9- Relatorio dos Aprovados e Reprovados";
-    cout << "\n10- Imprimir relatório geral de cada disciplina";
+    cout << "\n5- Mostrar um aluno de uma disciplina";
+    cout << "\n6- Ministrar aula de uma disciplina / dar Avaliacao";
+    cout << "\n7- Mostrar aulas de uma Disciplina";
+    cout << "\n8- Cadastrar alunos em uma Disciplina";
+    cout << "\n9- Fechamento de semestre com Aplicacao de exames/recuperacao";
+    cout << "\n10- Relatorio dos Aprovados e Reprovados";
+    cout << "\n11- Imprimir relatório geral de cada disciplina";
     cout << "\nSua escolha: ";
 
     cin >> op;
@@ -1101,24 +1135,27 @@ int main()
       mostraDisciplinas(&inicio);
       break;
     case 4:
-      printaAluno(&inicio);
+      printaAluno(&inicio, 0, 2);
       break;
     case 5:
-      darAula(&inicio, padrao);
+      printaAluno(&inicio, 0, 1);
       break;
     case 6:
-      mostraAulas(&inicio);
+      darAula(&inicio, padrao);
       break;
     case 7:
-      cadastraAluno(&inicio);
+      mostraAulas(&inicio);
       break;
     case 8:
-      fechaSemestre(&inicio);
+      cadastraAluno(&inicio);
       break;
     case 9:
-      printaAprovadosReprovados(&inicio);
+      fechaSemestre(&inicio);
       break;
     case 10:
+      printaAprovadosReprovados(&inicio);
+      break;
+    case 11:
       printaRelatorioTotal(&inicio);
       break;
     default:
