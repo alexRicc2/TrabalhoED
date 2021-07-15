@@ -1,3 +1,5 @@
+ //Diego Lopes da Silva
+ //Alex 
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -1274,4 +1276,5 @@ int main()
       break;
     }
   } while (op != 12);
+  return 0;
 }
