@@ -1,5 +1,5 @@
  //Diego Lopes da Silva
- //Alex 
+ //Alex Ricardo Rodrigues Sant'Anna
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -244,7 +244,7 @@ void mostraDisciplinas(Disciplina **inicio, bool op = 0)
 //funcao que recebe a data distorcida ao contrario e printa corretamente
 void printaData(int num)
 {
-
+  //Ex a data 20/08/2020 eh armazenada como 20200820 multipliacando o ano por 10000 mes por 100 e a adição do dia, essa função faz o processo contrario para printar a data legivel
   int aux;
 
   aux = num % 100;
